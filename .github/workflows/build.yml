@@ -34,16 +34,7 @@ jobs:
 
           VARPATH=""
           if git grep -nE 'var[[:space:]]+Version' -- '*.go' >/dev/null 2>&1; then
-            for p in \
-              "main.Version" \
-              "cmd.Version" \
-              "github.com/amnezia-vpn/amneziawg-go.Version" \
-              "github.com/amnezia-vpn/amneziawg-go/main.Version" \
-              "github.com/amnezia-vpn/amneziawg-go/cmd.Version"
-            do
-              VARPATH="$p"
-              break
-            done
+            VARPATH="main.Version"
           fi
 
           LDFLAGS="-s -w"
@@ -51,8 +42,8 @@ jobs:
             LDFLAGS="$LDFLAGS -X $VARPATH=$VER"
           fi
 
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="$LDFLAGS" -o "$GITHUB_WORKSPACE/amneziawg-go" "$PKG"
-          file "$GITHUB_WORKSPACE/amneziawg-go"
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="$LDFLAGS" -o "$GITHUB_WORKSPACE/amneziawg-go-bin" "$PKG"
+          file "$GITHUB_WORKSPACE/amneziawg-go-bin"
 
       - name: Build ipk
         shell: bash
@@ -64,7 +55,7 @@ jobs:
           ROOT="$PWD/pkgroot"
           rm -rf "$ROOT"
           mkdir -p "$ROOT/control" "$ROOT/data/usr/bin"
-          cp -f "$GITHUB_WORKSPACE/amneziawg-go" "$ROOT/data/usr/bin/amneziawg-go"
+          cp -f "$GITHUB_WORKSPACE/amneziawg-go-bin" "$ROOT/data/usr/bin/amneziawg-go"
           chmod 0755 "$ROOT/data/usr/bin/amneziawg-go"
 
           printf 'Package: %s\nVersion: 1.0-%s\nArchitecture: %s\nMaintainer: BE3600-AWG-KMOD\nDescription: AmneziaWG userspace (amneziawg-go) for GL-BE3600\nPriority: optional\nSection: net\n' \
