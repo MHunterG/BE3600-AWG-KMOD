@@ -23,8 +23,36 @@ jobs:
         run: |
           set -eux
           cd amneziawg-go
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ../amneziawg-go ./main.go
-          file ../amneziawg-go
+          VER="$(git rev-parse --short HEAD)"
+
+          PKG=""
+          if [ -d ./cmd ]; then
+            if [ -d ./cmd/amneziawg-go ]; then PKG="./cmd/amneziawg-go"; fi
+            if [ -z "$PKG" ] && [ -d ./cmd/awg-go ]; then PKG="./cmd/awg-go"; fi
+          fi
+          if [ -z "$PKG" ]; then PKG="."; fi
+
+          VARPATH=""
+          if git grep -nE 'var[[:space:]]+Version' -- '*.go' >/dev/null 2>&1; then
+            for p in \
+              "main.Version" \
+              "cmd.Version" \
+              "github.com/amnezia-vpn/amneziawg-go.Version" \
+              "github.com/amnezia-vpn/amneziawg-go/main.Version" \
+              "github.com/amnezia-vpn/amneziawg-go/cmd.Version"
+            do
+              VARPATH="$p"
+              break
+            done
+          fi
+
+          LDFLAGS="-s -w"
+          if [ -n "$VARPATH" ]; then
+            LDFLAGS="$LDFLAGS -X $VARPATH=$VER"
+          fi
+
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="$LDFLAGS" -o "$GITHUB_WORKSPACE/amneziawg-go" "$PKG"
+          file "$GITHUB_WORKSPACE/amneziawg-go"
 
       - name: Build ipk
         shell: bash
@@ -36,7 +64,7 @@ jobs:
           ROOT="$PWD/pkgroot"
           rm -rf "$ROOT"
           mkdir -p "$ROOT/control" "$ROOT/data/usr/bin"
-          cp -f amneziawg-go "$ROOT/data/usr/bin/amneziawg-go"
+          cp -f "$GITHUB_WORKSPACE/amneziawg-go" "$ROOT/data/usr/bin/amneziawg-go"
           chmod 0755 "$ROOT/data/usr/bin/amneziawg-go"
 
           printf 'Package: %s\nVersion: 1.0-%s\nArchitecture: %s\nMaintainer: BE3600-AWG-KMOD\nDescription: AmneziaWG userspace (amneziawg-go) for GL-BE3600\nPriority: optional\nSection: net\n' \
