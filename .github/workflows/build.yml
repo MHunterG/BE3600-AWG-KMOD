@@ -24,13 +24,11 @@ jobs:
             git libncurses-dev libssl-dev python3 rsync unzip zlib1g-dev file wget ca-certificates
 
       - name: Checkout GL.iNet infra builder
+        env:
+          GIT_TERMINAL_PROMPT: "0"
         run: |
           set -eux
-          git -c http.extraheader= \
-              -c credential.helper= \
-              -c core.askPass=true \
-              -c GIT_TERMINAL_PROMPT=0 \
-              clone --depth 1 https://github.com/gl-inet/gl-infra-builder.git /opt/gl-infra-builder
+          git -c http.extraheader= -c credential.helper= clone --depth 1 https://github.com/gl-inet/gl-infra-builder.git /opt/gl-infra-builder
 
       - name: Prepare build tree for GL-BE3600
         env:
