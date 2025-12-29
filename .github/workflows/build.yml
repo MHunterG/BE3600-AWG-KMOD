@@ -24,6 +24,7 @@ jobs:
           set -eux
           cd amneziawg-go
           CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ../amneziawg-go ./main.go
+          file ../amneziawg-go
 
       - name: Build ipk
         shell: bash
@@ -38,21 +39,19 @@ jobs:
           cp -f amneziawg-go "$ROOT/data/usr/bin/amneziawg-go"
           chmod 0755 "$ROOT/data/usr/bin/amneziawg-go"
 
-          cat > "$ROOT/control/control" << EOF
-Package: ${PKG}
-Version: 1.0-${VER}
-Architecture: ${ARCH}
-Maintainer: BE3600-AWG-KMOD
-Description: AmneziaWG userspace (amneziawg-go) for GL-BE3600
-Priority: optional
-Section: net
-EOF
+          printf 'Package: %s\nVersion: 1.0-%s\nArchitecture: %s\nMaintainer: BE3600-AWG-KMOD\nDescription: AmneziaWG userspace (amneziawg-go) for GL-BE3600\nPriority: optional\nSection: net\n' \
+            "$PKG" "$VER" "$ARCH" > "$ROOT/control/control"
 
           echo "2.0" > "$ROOT/debian-binary"
           (cd "$ROOT/control" && tar --numeric-owner --group=0 --owner=0 -czf ../control.tar.gz .)
           (cd "$ROOT/data" && tar --numeric-owner --group=0 --owner=0 -czf ../data.tar.gz .)
+
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binutils
+
           ar r "${PKG}_1.0-${VER}_${ARCH}.ipk" "$ROOT/debian-binary" "$ROOT/control.tar.gz" "$ROOT/data.tar.gz"
           sha256sum "${PKG}_1.0-${VER}_${ARCH}.ipk" > "${PKG}_1.0-${VER}_${ARCH}.ipk.sha256"
+          ls -lah *.ipk *.sha256
 
       - uses: actions/upload-artifact@v4
         with:
